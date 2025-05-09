@@ -1,0 +1,6 @@
+@AIMoneyRecordLineBot_HostAddress = http://localhost:5214
+
+GET {{AIMoneyRecordLineBot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
