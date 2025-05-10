@@ -1,5 +1,7 @@
+using AIMoneyRecordLineBot.Entity;
 using AIMoneyRecordLineBot.Models;
 using AIMoneyRecordLineBot.Services;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,9 @@ builder.Services.AddScoped<ChatService>();
 var configuration = builder.Configuration;
 var channelAccessToken = configuration["LineBotChannelAccessToken"] ?? "";
 var OpenaiApiKey = configuration["OpenaiApiKey"] ?? "";
+builder.Services.AddDbContext<AIMoneyRecordLineBotContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 builder.Services.Configure<LineBotSettings>(settings =>
 {
     settings.ChannelAccessToken = channelAccessToken;

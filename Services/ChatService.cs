@@ -1,4 +1,5 @@
-﻿using AIMoneyRecordLineBot.Models;
+﻿using AIMoneyRecordLineBot.Entity;
+using AIMoneyRecordLineBot.Models;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenAI.Chat;
@@ -8,9 +9,11 @@ namespace AIMoneyRecordLineBot.Services
     public class ChatService
     {
         private readonly string openAPIKey;
-        public ChatService(IOptions<LineBotSettings> settings)
+        private readonly AIMoneyRecordLineBotContext context;
+        public ChatService(IOptions<LineBotSettings> settings, AIMoneyRecordLineBotContext context)
         {
             openAPIKey = settings.Value.OpenaiApiKey;
+            this.context = context;
         }
 
         public async Task<string> ProcessMoneyRecord(string message)
@@ -29,6 +32,27 @@ namespace AIMoneyRecordLineBot.Services
 
             var extractJson = ExtractJsonFromResponse(response);
             var expenses = JsonConvert.DeserializeObject<List<ExpenseItem>>(extractJson);
+            var expenseRecords = new List<ExpenseRecord>();
+            if (expenses != null)
+            {
+                var nowTime = DateTime.UtcNow;
+                foreach (var expense in expenses)
+                {
+                    expenseRecords.Add(new ExpenseRecord
+                    {
+                        Id = 0,
+                        Source = "Line",
+                        Amount = expense.Amount,
+                        Category = expense.Category,
+                        Description = expense.Description,
+                        ConsumptionTime = expense.ConsumptionTime ?? nowTime,
+                        CreateDateTime = nowTime,
+                        UserId = 1, //TODO
+                    });
+                }
+                await context.ExpenseRecords.AddRangeAsync(expenseRecords);
+                await context.SaveChangesAsync();
+            }
 
             return response;
         }
