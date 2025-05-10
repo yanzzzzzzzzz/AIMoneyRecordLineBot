@@ -46,8 +46,20 @@ namespace AIMoneyRecordLineBot.Controllers
 
                     if (messageEvent.Message.Type == "text")
                     {
-                        var response = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
-                        Console.WriteLine(response);
+                        var expenseRecords = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
+                        var result = "";
+                        if(expenseRecords.Count == 0)
+                        {
+                            result = "系統無法辨識你輸入的資訊, 請填寫如下範例: 早餐200, 電話費499, 健身房50";
+                        }
+                        else
+                        {
+                            result = "以下是你填寫的消費資訊\n";
+                            foreach (var record in expenseRecords)
+                            {
+                                result += $"描述: {record.Description}, 類別: {record.Category},金額: {record.Amount}, 消費時間: {record.ConsumptionTime.ToLocalTime():yyyy/MM/dd}\n";
+                            }
+                        }
                         await lineService.MessageReply(new SendReplyMessage
                         {
                             ReplyToken = messageEvent.ReplyToken,
@@ -56,7 +68,7 @@ namespace AIMoneyRecordLineBot.Controllers
                                 new Message
                                 {
                                     Type = "text",
-                                    Text = response
+                                    Text = result
                                 }
                             }
                         });

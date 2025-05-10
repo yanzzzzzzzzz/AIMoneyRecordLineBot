@@ -16,7 +16,7 @@ namespace AIMoneyRecordLineBot.Services
             this.context = context;
         }
 
-        public async Task<string> ProcessMoneyRecord(string message)
+        public async Task<List<ExpenseRecord>> ProcessMoneyRecord(string message)
         {
             var chatClient = new ChatClient(model: "gpt-4o-mini", apiKey: openAPIKey);
             string prompt = $@"  
@@ -33,6 +33,7 @@ namespace AIMoneyRecordLineBot.Services
             var extractJson = ExtractJsonFromResponse(response);
             var expenses = JsonConvert.DeserializeObject<List<ExpenseItem>>(extractJson);
             var expenseRecords = new List<ExpenseRecord>();
+
             if (expenses != null)
             {
                 var nowTime = DateTime.UtcNow;
@@ -54,7 +55,7 @@ namespace AIMoneyRecordLineBot.Services
                 await context.SaveChangesAsync();
             }
 
-            return response;
+            return expenseRecords;
         }
         static string ExtractJsonFromResponse(string response)
         {
