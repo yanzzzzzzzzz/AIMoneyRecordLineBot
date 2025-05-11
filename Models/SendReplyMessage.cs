@@ -1,6 +1,4 @@
-﻿using AIMoneyRecordLineBot.Controllers;
-
-namespace AIMoneyRecordLineBot.Models
+﻿namespace AIMoneyRecordLineBot.Models
 {
     public class SendReplyMessage
     {

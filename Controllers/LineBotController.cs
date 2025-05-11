@@ -48,29 +48,69 @@ namespace AIMoneyRecordLineBot.Controllers
                     {
                         var expenseRecords = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
                         var result = "";
+                        var message = new List<Message>();
                         if(expenseRecords.Count == 0)
                         {
-                            result = "系統無法辨識你輸入的資訊, 請填寫如下範例: 早餐200, 電話費499, 健身房50";
+                            message.Add(new Message
+                            {
+                                Type = "系統無法辨識你輸入的資訊, 請填寫如下範例: 早餐200, 電話費499, 健身房50",
+                                Text = result
+                            });
                         }
                         else
                         {
-                            result = "以下是你填寫的消費資訊\n";
-                            foreach (var record in expenseRecords)
+                            var groupedRecords = expenseRecords
+                                .GroupBy(r => r.ConsumptionTime.ToLocalTime().Date)
+                                .OrderBy(g => g.Key)
+                                .ToList();
+                            var bubbles = groupedRecords.Select(group =>
                             {
-                                result += $"描述: {record.Description}, 類別: {record.Category},金額: {record.Amount}, 消費時間: {record.ConsumptionTime.ToLocalTime():yyyy/MM/dd}\n";
-                            }
+                                var dateText = group.Key.ToString("yyyy/MM/dd");
+
+                                var contents = new List<FlexComponent>
+                                {
+                                    new FlexText { Text = $" {dateText}", Weight = "bold", Size = "lg", Margin = "md" }
+                                };
+
+                                foreach (var record in group)
+                                {
+                                    contents.Add(new FlexBox
+                                    {
+                                        Layout = "vertical",
+                                        Margin = "sm",
+                                        Contents = new List<FlexComponent>
+                                        {
+                                            new FlexText { Text = $"• {record.Description}（{record.Category ?? "未分類"}）", Wrap = true },
+                                            new FlexText { Text = $"金額：{record.Amount} 元", Size = "sm", Color = "#888888" }
+                                        }
+                                    });
+                                }
+
+                                return new FlexBubble
+                                {
+                                    Body = new FlexBox
+                                    {
+                                        Layout = "vertical",
+                                        Contents = contents
+                                    }
+                                };
+                            }).ToList();
+
+                            var flexMessage = new Message
+                            {
+                                Type = "flex",
+                                AltText = "以下是你填寫的消費資訊",
+                                Contents = new FlexCarousel
+                                {
+                                    Contents = bubbles
+                                }
+                            };
+                            message.Add(flexMessage);
                         }
                         await lineService.MessageReply(new SendReplyMessage
                         {
                             ReplyToken = messageEvent.ReplyToken,
-                            Messages = new List<Message>
-                            {
-                                new Message
-                                {
-                                    Type = "text",
-                                    Text = result
-                                }
-                            }
+                            Messages = message
                         });
                     }
                 }
@@ -108,24 +148,6 @@ namespace AIMoneyRecordLineBot.Controllers
     public class DeliveryContext
     {
         public bool IsRedelivery { get; set; }
-    }
-
-    public class Message
-    {
-        public string Type { get; set; }
-        public string Id { get; set; }
-        public string QuotedMessageId { get; set; }
-        public string QuoteToken { get; set; }
-        public string Text { get; set; }
-
-        public string Title { get; set; }
-        public string Address { get; set; }
-        public decimal Latitude { get; set; }
-        public decimal Longitude { get; set; }
-        public string OriginalContentUrl { get; set; }
-        public string PreviewImageUrl { get; set; }
-
-        public string AltText { get; set; }
     }
 
 }
