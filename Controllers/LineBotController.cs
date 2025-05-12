@@ -120,34 +120,5 @@ namespace AIMoneyRecordLineBot.Controllers
         }
     }
 
-    public class LineWebhookObject
-    {
-        public string Destination { get; set; }
-        public object[] Events { get; set; }
-    }
-
-    public class LineWebhookEvent
-    {
-        public string ReplyToken { get; set; }
-        public string Type { get; set; }
-        public string Mode { get; set; }
-        public long Timestamp { get; set; }
-        public Source Source { get; set; }
-        public string WebhookEventId { get; set; }
-        public DeliveryContext DeliveryContext { get; set; }
-        public Message Message { get; set; }
-    }
-
-    public class Source
-    {
-        public string Type { get; set; }
-        public string GroupId { get; set; }
-        public string UserId { get; set; }
-    }
-
-    public class DeliveryContext
-    {
-        public bool IsRedelivery { get; set; }
-    }
 
 }
