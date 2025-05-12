@@ -1,4 +1,5 @@
-﻿using AIMoneyRecordLineBot.Models;
+﻿using AIMoneyRecordLineBot.Entity;
+using AIMoneyRecordLineBot.Models;
 using AIMoneyRecordLineBot.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +16,12 @@ namespace AIMoneyRecordLineBot.Controllers
     {
         private readonly ChatService chatService;
         private readonly string _channelAccessToken;
-        public LineBotController(ChatService chatService, IOptions<LineBotSettings> settings)
+        private readonly AIMoneyRecordLineBotContext context;
+        public LineBotController(ChatService chatService, IOptions<LineBotSettings> settings, AIMoneyRecordLineBotContext context)
         {
             this.chatService = chatService;
             this._channelAccessToken = settings.Value.ChannelAccessToken;
+            this.context = context;
         }
 
         [HttpPost]
@@ -43,13 +46,26 @@ namespace AIMoneyRecordLineBot.Controllers
                     {
                         throw new Exception("message error");
                     }
+                    var user = context.Users.SingleOrDefault(x => x.LineUserId == messageEvent.Source.UserId);
+                    if (user == null)
+                    {
+                        var userProfile = await lineService.GetUserProfile(messageEvent.Source.UserId);
+                        user = new User
+                        {
+                            LineUserId = messageEvent.Source.UserId,
+                            LineDisplayName = userProfile.DisplayName,
+                            CreateDateTime = DateTime.UtcNow
+                        };
+                        context.Users.Add(user);
+                        await context.SaveChangesAsync();
+                    }
 
                     if (messageEvent.Message.Type == "text")
                     {
-                        var expenseRecords = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
+                        var expenseItems = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
                         var result = "";
                         var message = new List<Message>();
-                        if(expenseRecords.Count == 0)
+                        if(expenseItems.Count == 0)
                         {
                             message.Add(new Message
                             {
@@ -59,6 +75,26 @@ namespace AIMoneyRecordLineBot.Controllers
                         }
                         else
                         {
+                            var expenseRecords = new List<ExpenseRecord>();
+
+                            var nowTime = DateTime.UtcNow;
+                            foreach (var expense in expenseItems)
+                            {
+                                expenseRecords.Add(new ExpenseRecord
+                                {
+                                    Id = 0,
+                                    Source = "Line",
+                                    Amount = expense.Amount,
+                                    Category = expense.Category,
+                                    Description = expense.Description,
+                                    ConsumptionTime = expense.ConsumptionTime ?? nowTime,
+                                    CreateDateTime = nowTime,
+                                    UserId = user.Id,
+                                });
+                            }
+                            await context.ExpenseRecords.AddRangeAsync(expenseRecords);
+                            await context.SaveChangesAsync();
+
                             var groupedRecords = expenseRecords
                                 .GroupBy(r => r.ConsumptionTime.ToLocalTime().Date)
                                 .OrderBy(g => g.Key)

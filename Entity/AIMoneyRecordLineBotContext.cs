@@ -11,6 +11,7 @@ public partial class AIMoneyRecordLineBotContext : DbContext
     {
     }
     public virtual DbSet<ExpenseRecord> ExpenseRecords { get; set; }
+    public virtual DbSet<User> Users { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -42,6 +43,20 @@ public partial class AIMoneyRecordLineBotContext : DbContext
                 .HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.UserId)
                 .IsRequired();
+        });
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LineUserId)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.LineDisplayName)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.CreateDateTime)
+                .IsRequired()
+                .HasDefaultValueSql("GETDATE()");
         });
     }
 }

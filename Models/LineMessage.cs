@@ -134,3 +134,10 @@ public class FlexBlockStyle
     public string BackgroundColor { get; set; }
     public bool? Separator { get; set; }
 }
+
+public class UserProfile
+{
+    public string UserId { get; set; }
+    public string DisplayName { get; set; }
+    public string Language { get; set; }
+}
