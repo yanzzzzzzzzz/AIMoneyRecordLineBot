@@ -59,8 +59,7 @@ namespace AIMoneyRecordLineBot.Controllers
                         context.Users.Add(user);
                         await context.SaveChangesAsync();
                     }
-
-                    if (messageEvent.Message.Type == "text")
+                    else if (messageEvent.Message.Type == "text")
                     {
                         var expenseItems = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
                         var result = "";
