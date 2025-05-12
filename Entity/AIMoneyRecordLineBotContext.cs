@@ -43,6 +43,10 @@ public partial class AIMoneyRecordLineBotContext : DbContext
                 .HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.UserId)
                 .IsRequired();
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.ExpenseRecords)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
         modelBuilder.Entity<User>(entity =>
         {

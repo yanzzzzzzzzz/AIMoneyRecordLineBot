@@ -59,6 +59,8 @@ namespace AIMoneyRecordLineBot.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("ExpenseRecords", (string)null);
                 });
 
@@ -87,7 +89,23 @@ namespace AIMoneyRecordLineBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("AIMoneyRecordLineBot.Entity.ExpenseRecord", b =>
+                {
+                    b.HasOne("AIMoneyRecordLineBot.Entity.User", "User")
+                        .WithMany("ExpenseRecords")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AIMoneyRecordLineBot.Entity.User", b =>
+                {
+                    b.Navigation("ExpenseRecords");
                 });
 #pragma warning restore 612, 618
         }

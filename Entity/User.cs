@@ -10,4 +10,6 @@ public class User
     public string LineUserId { get; set; }
     public string LineDisplayName { get; set; }
     public DateTime CreateDateTime { get; set; }
+
+    public virtual ICollection<ExpenseRecord> ExpenseRecords { get; set; }
 }
