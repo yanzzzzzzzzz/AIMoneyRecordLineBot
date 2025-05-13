@@ -22,6 +22,7 @@ public class MessageBuilder
                               .OrderBy(g => g.Key);
         var bubbles = grouped.Select(group =>
         {
+            var total = group.Sum(r => r.Amount);
             var components = new List<FlexComponent>
             {
                 new FlexText { Text = group.Key.ToString("yyyy/MM/dd"), Size = "lg", Weight = "bold", Margin = "md" }
@@ -40,6 +41,15 @@ public class MessageBuilder
                     }
                 });
             }
+            components.Add(new FlexText
+            {
+                Text = $"💰 總計：{total} 元",
+                Size = "md",
+                Weight = "bold",
+                Color = "#333333",
+                Margin = "lg"
+            });
+
 
             return new FlexBubble
             {
