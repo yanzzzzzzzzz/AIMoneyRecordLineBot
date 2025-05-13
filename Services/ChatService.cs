@@ -88,6 +88,7 @@ namespace AIMoneyRecordLineBot.Services
 
                                 Rules:
                                 - Do not include any explanation, commentary, or additional text.
+                                - Ignore lines such as Totals, Taxes, Discounts, Change, Payments or summary information
                                 - Only output a pure JSON array.
                                 - If fewer than 30 items are detected, just return the available items."
                             },
