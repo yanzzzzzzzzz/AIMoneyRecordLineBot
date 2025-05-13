@@ -148,6 +148,96 @@ namespace AIMoneyRecordLineBot.Controllers
                             Messages = message
                         });
                     }
+                    else if (messageEvent.Message.Type == "image")
+                    {
+                        var imageContent = await lineService.GetMessageContent(messageEvent.Message.Id);
+                        var expenseItems = await chatService.ProcessImage(imageContent);
+                        var result = "";
+                        var message = new List<Message>();
+                        if (expenseItems.Count == 0)
+                        {
+                            message.Add(new Message
+                            {
+                                Type = "系統無法辨識你輸入的資訊, 請上傳收據, 發票明細等圖片",
+                                Text = result
+                            });
+                        }
+                        else
+                        {
+                            var expenseRecords = new List<ExpenseRecord>();
+
+                            var nowTime = DateTime.UtcNow;
+                            foreach (var expense in expenseItems)
+                            {
+                                expenseRecords.Add(new ExpenseRecord
+                                {
+                                    Id = 0,
+                                    Source = "Line",
+                                    Amount = expense.Amount,
+                                    Category = expense.Category,
+                                    Description = expense.Description,
+                                    ConsumptionTime = expense.ConsumptionTime ?? nowTime,
+                                    CreateDateTime = nowTime,
+                                    UserId = user.Id,
+                                });
+                            }
+                            await context.ExpenseRecords.AddRangeAsync(expenseRecords);
+                            await context.SaveChangesAsync();
+
+                            var groupedRecords = expenseRecords
+                                .GroupBy(r => r.ConsumptionTime.ToLocalTime().Date)
+                                .OrderBy(g => g.Key)
+                                .ToList();
+                            var bubbles = groupedRecords.Select(group =>
+                            {
+                                var dateText = group.Key.ToString("yyyy/MM/dd");
+
+                                var contents = new List<FlexComponent>
+                                {
+                                    new FlexText { Text = $" {dateText}", Weight = "bold", Size = "lg", Margin = "md" }
+                                };
+
+                                foreach (var record in group)
+                                {
+                                    contents.Add(new FlexBox
+                                    {
+                                        Layout = "vertical",
+                                        Margin = "sm",
+                                        Contents = new List<FlexComponent>
+                                        {
+                                            new FlexText { Text = $"• {record.Description}（{record.Category ?? "未分類"}）", Wrap = true },
+                                            new FlexText { Text = $"金額：{record.Amount} 元", Size = "sm", Color = "#888888" }
+                                        }
+                                    });
+                                }
+
+                                return new FlexBubble
+                                {
+                                    Body = new FlexBox
+                                    {
+                                        Layout = "vertical",
+                                        Contents = contents
+                                    }
+                                };
+                            }).ToList();
+
+                            var flexMessage = new Message
+                            {
+                                Type = "flex",
+                                AltText = "以下是你填寫的消費資訊",
+                                Contents = new FlexCarousel
+                                {
+                                    Contents = bubbles
+                                }
+                            };
+                            message.Add(flexMessage);
+                        }
+                        await lineService.MessageReply(new SendReplyMessage
+                        {
+                            ReplyToken = messageEvent.ReplyToken,
+                            Messages = message
+                        });
+                    }
                 }
             }
 

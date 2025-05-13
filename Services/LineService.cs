@@ -38,4 +38,16 @@ public class LineService(HttpClient httpClient)
             throw new Exception("GetUserProfile Exception:" + responseBody);
         }
     }
+
+    public async Task<byte[]> GetMessageContent(string messageId)
+    {
+        var response = await httpClient.GetAsync($"https://api-data.line.me/v2/bot/message/{messageId}/content");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception("Failed to download image");
+        }
+        return await response.Content.ReadAsByteArrayAsync();
+
+    }
 }
