@@ -14,14 +14,14 @@ namespace AIMoneyRecordLineBot.Controllers
     [ApiController]
     public class LineBotController : ControllerBase
     {
-        private readonly ChatService chatService;
         private readonly string _channelAccessToken;
         private readonly AIMoneyRecordLineBotContext context;
-        public LineBotController(ChatService chatService, IOptions<LineBotSettings> settings, AIMoneyRecordLineBotContext context)
+        private readonly ExpenseService expenseService;
+        public LineBotController(IOptions<LineBotSettings> settings, AIMoneyRecordLineBotContext context, ExpenseService expenseService)
         {
-            this.chatService = chatService;
             this._channelAccessToken = settings.Value.ChannelAccessToken;
             this.context = context;
+            this.expenseService = expenseService;
         }
 
         [HttpPost]
@@ -59,183 +59,22 @@ namespace AIMoneyRecordLineBot.Controllers
                         context.Users.Add(user);
                         await context.SaveChangesAsync();
                     }
-                    else if (messageEvent.Message.Type == "text")
+                    List<Message> replyMessages = null;
+                    if (messageEvent.Message.Type == "text")
                     {
-                        var expenseItems = await chatService.ProcessMoneyRecord(messageEvent.Message.Text);
-                        var result = "";
-                        var message = new List<Message>();
-                        if(expenseItems.Count == 0)
-                        {
-                            message.Add(new Message
-                            {
-                                Type = "系統無法辨識你輸入的資訊, 請填寫如下範例: 早餐200, 電話費499, 健身房50",
-                                Text = result
-                            });
-                        }
-                        else
-                        {
-                            var expenseRecords = new List<ExpenseRecord>();
+                        replyMessages = await expenseService.HandleTextExpense(messageEvent);
 
-                            var nowTime = DateTime.UtcNow;
-                            foreach (var expense in expenseItems)
-                            {
-                                expenseRecords.Add(new ExpenseRecord
-                                {
-                                    Id = 0,
-                                    Source = "LineText",
-                                    Amount = expense.Amount,
-                                    Category = expense.Category,
-                                    Description = expense.Description,
-                                    ConsumptionTime = expense.ConsumptionTime ?? nowTime,
-                                    CreateDateTime = nowTime,
-                                    UserId = user.Id,
-                                });
-                            }
-                            await context.ExpenseRecords.AddRangeAsync(expenseRecords);
-                            await context.SaveChangesAsync();
-
-                            var groupedRecords = expenseRecords
-                                .GroupBy(r => r.ConsumptionTime.ToLocalTime().Date)
-                                .OrderBy(g => g.Key)
-                                .ToList();
-                            var bubbles = groupedRecords.Select(group =>
-                            {
-                                var dateText = group.Key.ToString("yyyy/MM/dd");
-
-                                var contents = new List<FlexComponent>
-                                {
-                                    new FlexText { Text = $" {dateText}", Weight = "bold", Size = "lg", Margin = "md" }
-                                };
-
-                                foreach (var record in group)
-                                {
-                                    contents.Add(new FlexBox
-                                    {
-                                        Layout = "vertical",
-                                        Margin = "sm",
-                                        Contents = new List<FlexComponent>
-                                        {
-                                            new FlexText { Text = $"• {record.Description}（{record.Category ?? "未分類"}）", Wrap = true },
-                                            new FlexText { Text = $"金額：{record.Amount} 元", Size = "sm", Color = "#888888" }
-                                        }
-                                    });
-                                }
-
-                                return new FlexBubble
-                                {
-                                    Body = new FlexBox
-                                    {
-                                        Layout = "vertical",
-                                        Contents = contents
-                                    }
-                                };
-                            }).ToList();
-
-                            var flexMessage = new Message
-                            {
-                                Type = "flex",
-                                AltText = "以下是你填寫的消費資訊",
-                                Contents = new FlexCarousel
-                                {
-                                    Contents = bubbles
-                                }
-                            };
-                            message.Add(flexMessage);
-                        }
-                        await lineService.MessageReply(new SendReplyMessage
-                        {
-                            ReplyToken = messageEvent.ReplyToken,
-                            Messages = message
-                        });
                     }
                     else if (messageEvent.Message.Type == "image")
                     {
-                        var imageContent = await lineService.GetMessageContent(messageEvent.Message.Id);
-                        var expenseItems = await chatService.ProcessImage(imageContent);
-                        var result = "";
-                        var message = new List<Message>();
-                        if (expenseItems.Count == 0)
-                        {
-                            message.Add(new Message
-                            {
-                                Type = "系統無法辨識你輸入的資訊, 請上傳收據, 發票明細等圖片",
-                                Text = result
-                            });
-                        }
-                        else
-                        {
-                            var expenseRecords = new List<ExpenseRecord>();
-
-                            var nowTime = DateTime.UtcNow;
-                            foreach (var expense in expenseItems)
-                            {
-                                expenseRecords.Add(new ExpenseRecord
-                                {
-                                    Id = 0,
-                                    Source = "LineImage",
-                                    Amount = expense.Amount,
-                                    Category = expense.Category,
-                                    Description = expense.Description,
-                                    ConsumptionTime = expense.ConsumptionTime ?? nowTime,
-                                    CreateDateTime = nowTime,
-                                    UserId = user.Id,
-                                });
-                            }
-                            await context.ExpenseRecords.AddRangeAsync(expenseRecords);
-                            await context.SaveChangesAsync();
-
-                            var groupedRecords = expenseRecords
-                                .GroupBy(r => r.ConsumptionTime.ToLocalTime().Date)
-                                .OrderBy(g => g.Key)
-                                .ToList();
-                            var bubbles = groupedRecords.Select(group =>
-                            {
-                                var dateText = group.Key.ToString("yyyy/MM/dd");
-
-                                var contents = new List<FlexComponent>
-                                {
-                                    new FlexText { Text = $" {dateText}", Weight = "bold", Size = "lg", Margin = "md" }
-                                };
-
-                                foreach (var record in group)
-                                {
-                                    contents.Add(new FlexBox
-                                    {
-                                        Layout = "vertical",
-                                        Margin = "sm",
-                                        Contents = new List<FlexComponent>
-                                        {
-                                            new FlexText { Text = $"• {record.Description}（{record.Category ?? "未分類"}）", Wrap = true },
-                                            new FlexText { Text = $"金額：{record.Amount} 元", Size = "sm", Color = "#888888" }
-                                        }
-                                    });
-                                }
-
-                                return new FlexBubble
-                                {
-                                    Body = new FlexBox
-                                    {
-                                        Layout = "vertical",
-                                        Contents = contents
-                                    }
-                                };
-                            }).ToList();
-
-                            var flexMessage = new Message
-                            {
-                                Type = "flex",
-                                AltText = "以下是你填寫的消費資訊",
-                                Contents = new FlexCarousel
-                                {
-                                    Contents = bubbles
-                                }
-                            };
-                            message.Add(flexMessage);
-                        }
+                        replyMessages = await expenseService.HandleImageExpense(messageEvent);
+                    }
+                    if(replyMessages != null)
+                    {
                         await lineService.MessageReply(new SendReplyMessage
                         {
                             ReplyToken = messageEvent.ReplyToken,
-                            Messages = message
+                            Messages = replyMessages,
                         });
                     }
                 }

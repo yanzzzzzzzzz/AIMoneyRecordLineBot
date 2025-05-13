@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<ChatService>();
+builder.Services.AddScoped<ExpenseService>();
 
 var configuration = builder.Configuration;
 var channelAccessToken = configuration["LineBotChannelAccessToken"] ?? "";
