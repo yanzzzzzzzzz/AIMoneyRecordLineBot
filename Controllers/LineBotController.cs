@@ -82,7 +82,7 @@ namespace AIMoneyRecordLineBot.Controllers
                                 expenseRecords.Add(new ExpenseRecord
                                 {
                                     Id = 0,
-                                    Source = "Line",
+                                    Source = "LineText",
                                     Amount = expense.Amount,
                                     Category = expense.Category,
                                     Description = expense.Description,
@@ -172,7 +172,7 @@ namespace AIMoneyRecordLineBot.Controllers
                                 expenseRecords.Add(new ExpenseRecord
                                 {
                                     Id = 0,
-                                    Source = "Line",
+                                    Source = "LineImage",
                                     Amount = expense.Amount,
                                     Category = expense.Category,
                                     Description = expense.Description,
