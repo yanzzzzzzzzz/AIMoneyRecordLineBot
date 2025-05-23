@@ -1,0 +1,120 @@
+﻿@{
+    ViewData["Title"] = "小月曆記帳頁";
+}
+
+<main id="app">
+    <div class="mb-4">
+        <h4>小月曆</h4>
+        <div class="calendar-grid border rounded p-3">
+            <div class="d-flex fw-bold text-center">
+                <div class="flex-fill" v-for="d in ['日', '一', '二', '三', '四', '五', '六']">{{ d }}</div>
+            </div>
+            <div class="d-flex flex-wrap text-center">
+                <div v-for="(day, i) in calendarDays"
+                     :key="i"
+                     class="flex-fill border p-2"
+                     :class="{
+                        'bg-primary text-white': day.date === selectedDate,
+                        'bg-light': hasData(day.date),
+                        'text-muted': !day.inCurrentMonth
+                    }"
+                     style="width: 14.2857%; cursor: pointer;"
+                     @@click="selectDate(day.date)">
+                    {{ day.day }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h4>記帳紀錄 - {{ selectedDate }}</h4>
+        <div v-if="filteredRecords.length === 0">
+            <p>此日尚無記錄</p>
+        </div>
+        <div class="card mb-3" v-for="r in filteredRecords" :key="r.id">
+            <div class="card-body">
+                <h5 class="card-title">{{ r.title }}</h5>
+                <p class="card-text">{{ r.amount }} 元</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+    .calendar-grid {
+        max-width: 420px;
+    }
+</style>
+
+<script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+        setup() {
+            const today = new Date().toISOString().split('T')[0];
+            const selectedDate = ref(today);
+
+            const records = ref([
+                { id: 1, title: '早餐', amount: 200, consumptionTime: '2025-05-12' },
+                { id: 2, title: '午餐', amount: 300, consumptionTime: '2025-05-12' },
+                { id: 3, title: '晚餐', amount: 150, consumptionTime: '2025-05-13' },
+                { id: 4, title: '便當', amount: 120, consumptionTime: '2025-05-20' }
+            ]);
+
+            const filteredRecords = computed(() => {
+                return records.value.filter(r => r.consumptionTime === selectedDate.value);
+            });
+
+            const hasData = (date) => {
+                return records.value.some(r => r.consumptionTime === date);
+            };
+
+            const calendarDays = computed(() => {
+                const result = [];
+                const baseDate = new Date(today);
+                baseDate.setDate(1);
+                const year = baseDate.getFullYear();
+                const month = baseDate.getMonth();
+
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startDayOfWeek = firstDay.getDay();
+                const totalDays = lastDay.getDate();
+
+                // 前補上個月尾巴
+                const prevLastDay = new Date(year, month, 0).getDate();
+                for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                    const d = new Date(year, month - 1, prevLastDay - i);
+                    result.push({ day: d.getDate(), date: d.toISOString().split('T')[0], inCurrentMonth: false });
+                }
+
+                // 當月天數
+                for (let i = 1; i <= totalDays; i++) {
+                    const d = new Date(year, month, i);
+                    result.push({ day: i, date: d.toISOString().split('T')[0], inCurrentMonth: true });
+                }
+
+                // 補滿42格
+                while (result.length < 42) {
+                    const d = new Date(year, month + 1, result.length - (startDayOfWeek + totalDays) + 1);
+                    result.push({ day: d.getDate(), date: d.toISOString().split('T')[0], inCurrentMonth: false });
+                }
+
+                return result;
+            });
+
+            const selectDate = (date) => {
+                selectedDate.value = date;
+            };
+
+            return {
+                selectedDate,
+                records,
+                filteredRecords,
+                calendarDays,
+                hasData,
+                selectDate
+            };
+        }
+    }).mount('#app');
+</script>

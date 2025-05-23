@@ -1,0 +1,79 @@
+﻿@model AIMoneyRecordLineBot.Controllers.LiffModel
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8" />
+    <title>LIFF 使用者資訊</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.min.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            text-align: center;
+        }
+
+        img {
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>LIFF 登入成功</h1>
+
+        <div v-if="profile">
+            <img :src="profile.pictureUrl" alt="頭像" />
+            <div class="info">
+                <p><strong>用戶名稱：</strong> {{ profile.displayName }}</p>
+                <p><strong>用戶 ID：</strong> {{ profile.userId }}</p>
+            </div>
+        </div>
+
+        <div v-else>
+            <p>登入中，請稍候...</p>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                profile: null
+            },
+            mounted() {
+                this.initLiff();
+            },
+            methods: {
+                async initLiff() {
+                    try {
+                        await liff.init({ liffId: '@Model.LiffId' });
+
+                        if (!liff.isLoggedIn()) {
+                            liff.login();
+                            return;
+                        }
+
+                        const profile = await liff.getProfile();
+                        this.profile = profile;
+                        console.log("登入成功：", profile);
+
+                    } catch (err) {
+                        console.error("LIFF 初始化失敗", err);
+                        alert("LIFF 初始化錯誤，請重新整理");
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
