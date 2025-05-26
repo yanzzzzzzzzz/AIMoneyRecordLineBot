@@ -16,8 +16,8 @@ namespace AIMoneyRecordLineBot.Controllers
     {
         private readonly string _channelAccessToken;
         private readonly AIMoneyRecordLineBotContext context;
-        private readonly ExpenseService expenseService;
-        public LineBotController(IOptions<LineBotSettings> settings, AIMoneyRecordLineBotContext context, ExpenseService expenseService)
+        private readonly ExpenseRecordService expenseService;
+        public LineBotController(IOptions<LineBotSettings> settings, AIMoneyRecordLineBotContext context, ExpenseRecordService expenseService)
         {
             this._channelAccessToken = settings.Value.ChannelAccessToken;
             this.context = context;

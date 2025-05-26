@@ -7,14 +7,14 @@ using System.Net.Http.Headers;
 
 namespace AIMoneyRecordLineBot.Services;
 
-public class ExpenseService
+public class ExpenseRecordService
 {
     private readonly ChatService _chatService;
     private readonly AIMoneyRecordLineBotContext context;
     private readonly MessageBuilder _messageBuilder = new MessageBuilder();
     private readonly string _channelAccessToken;
 
-    public ExpenseService(ChatService chatService, AIMoneyRecordLineBotContext context, IOptions<LineBotSettings> settings)
+    public ExpenseRecordService(ChatService chatService, AIMoneyRecordLineBotContext context, IOptions<LineBotSettings> settings)
     {
         _chatService = chatService;
         this.context = context;

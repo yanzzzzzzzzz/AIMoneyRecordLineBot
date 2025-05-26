@@ -13,7 +13,7 @@ builder.Services.AddControllersWithViews()
 
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<ChatService>();
-builder.Services.AddScoped<ExpenseService>();
+builder.Services.AddScoped<ExpenseRecordService>();
 
 var configuration = builder.Configuration;
 var channelAccessToken = configuration["LineBotChannelAccessToken"] ?? "";
