@@ -55,6 +55,7 @@ public class ExpenseRecordService
         }).ToList();
 
         await context.ExpenseRecords.AddRangeAsync(records);
+        context.SaveChanges();
         return _messageBuilder.BuildFlexMessages(records);
     }
 }
