@@ -58,4 +58,11 @@ public class ExpenseRecordService
         context.SaveChanges();
         return _messageBuilder.BuildFlexMessages(records);
     }
+    public async Task<List<ExpenseRecord>> GetExpenseRecordsByUserId(string userId)
+    {
+        return await context.ExpenseRecords
+            .Where(record => record.User.LineUserId == userId)
+            .OrderByDescending(record => record.ConsumptionTime)
+            .ToListAsync();
+    }
 }
