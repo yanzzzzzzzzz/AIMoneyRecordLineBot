@@ -4,32 +4,38 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<main id="app" class="container">
-    <div class="mb-2">
-        <h4 class="mb-2">📅 記帳月曆</h4>
-        <div class="calendar-grid border rounded p-3 mx-auto">
-            <div class="d-flex fw-bold text-center mb-2">
-                <div class="flex-fill" v-for="d in ['日', '一', '二', '三', '四', '五', '六']">{{ d }}</div>
+<main id="app" class="container py-3">
+    <div class="text-center mb-3">
+        <button class="btn btn-sm me-2" @@click="prevMonth">◀</button>
+        <span class=" fs-5">{{ year }}年{{ month + 1 }}月</span>
+        <button class="btn btn-sm ms-2" @@click="nextMonth">▶</button>
+    </div>
+
+    <div class="calendar-grid mx-auto text-center">
+        <div class="d-flex fw-bold">
+            <div class="calendar-weekday" v-for="(d, i) in ['日','一','二','三','四','五','六']"
+                 :class="getWeekdayClass(i)">
+                {{ d }}
             </div>
-            <div class="d-flex flex-wrap text-center position-relative">
-                <div v-for="(day, i) in calendarDays"
-                     :key="i"
-                     class="calendar-cell border position-relative"
-                     :class="getDateClass(day)"
-                     @@click="selectDate(day.date)">
-                    {{ day.day }}
-                    <span v-if="hasData(day.date) && day.date !== selectedDate" class="record-dot">•</span>
-                </div>
+        </div>
+        <div class="d-flex flex-wrap">
+            <div v-for="(day, i) in calendarDays"
+                 :key="i"
+                 class="calendar-cell"
+                 :class="getDateClass(day)"
+                 @@click="selectDate(day.date)">
+                <div>{{ day.isToday ? '今天' : day.day }}</div>
+                <span v-if="hasData(day.date)" class="record-dot">•</span>
             </div>
         </div>
     </div>
 
     <div class="mt-4">
-        <h4>📘 記帳紀錄 - {{ selectedDate }}</h4>
+        <h5 class="mb-3">記帳紀錄 - {{ selectedDate }}</h5>
         <div v-if="filteredRecords.length === 0">
-            <p class="text-muted">此日尚無記錄</p>
+            <p class="text-secondary">沒有記錄。</p>
         </div>
-        <div class="card mb-3" v-for="r in filteredRecords" :key="r.id">
+        <div class="card text-dark mb-3" v-for="r in filteredRecords" :key="r.id">
             <div class="card-body">
                 <h5 class="card-title">{{ r.title }}</h5>
                 <p class="card-text">{{ r.amount }} 元</p>
@@ -40,55 +46,74 @@
 
 <style>
     body {
-        background-color: #f9f9f9;
-        margin: 0;
-        font-family: "Segoe UI", Roboto, sans-serif;
+        background-color: #fff;
+        color: #000;
+        font-family: "Segoe UI", "PingFang TC", sans-serif;
     }
 
     .calendar-grid {
         max-width: 100%;
-        width: 100%;
+    }
+
+    .calendar-weekday {
+        width: 14.2857%;
+        padding: 0.5rem 0;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #444;
     }
 
     .calendar-cell {
         width: 14.2857%;
         padding: 0.6rem 0;
-        font-size: 0.9rem;
+        font-size: 1rem;
+        position: relative;
         cursor: pointer;
-        box-sizing: border-box;
+        color: #000;
     }
 
-    .text-muted {
-        color: #ccc !important;
-    }
+        .calendar-cell.inactive {
+            color: #bbb;
+        }
 
-    .selected-day {
-        background-color: #0d6efd !important;
-        color: #fff !important;
-        font-weight: bold;
-        border-radius: 6px;
-        border: 2px solid #084298;
-    }
+        .calendar-cell.sunday {
+            color: #d32f2f; /* 深紅 */
+        }
+
+        .calendar-cell.saturday {
+            color: #f57c00; /* 深橘 */
+        }
+
+        .calendar-cell.selected {
+            background-color: #1976d2;
+            color: #fff;
+            border-radius: 100px;
+            font-weight: bold;
+        }
 
     .record-dot {
         position: absolute;
         left: 50%;
+        bottom: 4px;
         transform: translateX(-50%);
-        bottom: 1px;
-        font-size: 0.9rem;
-        color: #dc3545;
-        line-height: 1;
+        font-size: 0.6rem;
+        color: #1976d2;
     }
 
-
-    .calendar-cell.bg-light {
-        background-color: #eaf4ff !important;
+    .card {
+        background-color: #f8f9fa;
     }
 
-    .container {
-        max-width: 600px;
-        margin: auto;
+    .btn {
+        background: transparent;
+        border: none;
+        color: #1976d2;
     }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
 </style>
 
 <script>
@@ -96,8 +121,12 @@
 
     createApp({
         setup() {
-            const today = new Date().toISOString().split('T')[0];
-            const selectedDate = ref(today);
+            const today = new Date();
+            const todayString = today.toISOString().split('T')[0];
+
+            const year = ref(today.getFullYear());
+            const month = ref(today.getMonth());
+            const selectedDate = ref(todayString);
 
             const records = ref([
                 { id: 1, title: '早餐', amount: 200, consumptionTime: '2025-05-12' },
@@ -116,58 +145,98 @@
 
             const calendarDays = computed(() => {
                 const result = [];
-                const baseDate = new Date(selectedDate.value);
-                baseDate.setDate(1);
-                const year = baseDate.getFullYear();
-                const month = baseDate.getMonth();
-
-                const firstDay = new Date(year, month, 1);
-                const lastDay = new Date(year, month + 1, 0);
+                const firstDay = new Date(year.value, month.value, 1);
                 const startDayOfWeek = firstDay.getDay();
-                const totalDays = lastDay.getDate();
+                const totalDays = new Date(year.value, month.value + 1, 0).getDate();
 
-                const prevLastDay = new Date(year, month, 0).getDate();
+                // 上月補
+                const prevLastDate = new Date(year.value, month.value, 0).getDate();
                 for (let i = startDayOfWeek - 1; i >= 0; i--) {
-                    const d = new Date(year, month - 1, prevLastDay - i);
-                    result.push({ day: d.getDate(), date: d.toISOString().split('T')[0], inCurrentMonth: false });
+                    const d = new Date(year.value, month.value - 1, prevLastDate - i);
+                    result.push({
+                        day: d.getDate(),
+                        date: d.toISOString().split('T')[0],
+                        inCurrentMonth: false,
+                        weekday: d.getDay(),
+                        isToday: d.toISOString().split('T')[0] === todayString
+                    });
                 }
 
+                // 當月
                 for (let i = 1; i <= totalDays; i++) {
-                    const d = new Date(year, month, i);
-                    result.push({ day: i, date: d.toISOString().split('T')[0], inCurrentMonth: true });
+                    const d = new Date(year.value, month.value, i);
+                    result.push({
+                        day: i,
+                        date: d.toISOString().split('T')[0],
+                        inCurrentMonth: true,
+                        weekday: d.getDay(),
+                        isToday: d.toISOString().split('T')[0] === todayString
+                    });
                 }
 
+                // 下月補足 42 格
                 while (result.length < 42) {
-                    const d = new Date(year, month + 1, result.length - (startDayOfWeek + totalDays) + 1);
-                    result.push({ day: d.getDate(), date: d.toISOString().split('T')[0], inCurrentMonth: false });
+                    const d = new Date(year.value, month.value + 1, result.length - (startDayOfWeek + totalDays) + 1);
+                    result.push({
+                        day: d.getDate(),
+                        date: d.toISOString().split('T')[0],
+                        inCurrentMonth: false,
+                        weekday: d.getDay(),
+                        isToday: d.toISOString().split('T')[0] === todayString
+                    });
                 }
 
                 return result;
             });
 
             const getDateClass = (day) => {
-                if (day.date === selectedDate.value) {
-                    return 'selected-day';
-                }
-
-                return {
-                    'bg-light': hasData(day.date),
-                    'text-muted': !day.inCurrentMonth
-                };
+                const classes = [];
+                if (!day.inCurrentMonth) classes.push('inactive');
+                if (day.weekday === 0) classes.push('sunday');
+                if (day.weekday === 6) classes.push('saturday');
+                if (day.date === selectedDate.value) classes.push('selected');
+                return classes.join(' ');
             };
 
-            const selectDate = (date) => {
-                selectedDate.value = date;
+            const getWeekdayClass = (i) => {
+                if (i === 0) return 'sunday';
+                if (i === 6) return 'saturday';
+                return '';
+            };
+
+            const selectDate = (date) => selectedDate.value = date;
+
+            const prevMonth = () => {
+                if (month.value === 0) {
+                    month.value = 11;
+                    year.value--;
+                } else {
+                    month.value--;
+                }
+            };
+
+            const nextMonth = () => {
+                if (month.value === 11) {
+                    month.value = 0;
+                    year.value++;
+                } else {
+                    month.value++;
+                }
             };
 
             return {
+                year,
+                month,
                 selectedDate,
                 records,
                 filteredRecords,
                 calendarDays,
                 hasData,
                 getDateClass,
-                selectDate
+                getWeekdayClass,
+                selectDate,
+                prevMonth,
+                nextMonth
             };
         }
     }).mount('#app');
