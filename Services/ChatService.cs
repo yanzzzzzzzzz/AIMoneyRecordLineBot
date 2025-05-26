@@ -25,7 +25,7 @@ namespace AIMoneyRecordLineBot.Services
             var chatClient = new ChatClient(model: "gpt-4o-mini", apiKey: openAPIKey);
             string prompt = $@"  
                請從以下文字中提取出多筆記錄，並進行分類。請根據每個項目的描述來分類金額、描述、類別、消費時間(月/日)等資料，並且使用以下格式回傳結果：  
-               每筆記錄需要有 'description', 'amount', 'category', 'consumptionTime'。如果無法判斷類別，設為 '其他'。如果無法判斷消費時間，設為 null。請返回每筆資料的 JSON 格式";
+               每筆記錄需要有 'description', 'amount', 'category', 'consumptionTime'。如果無法判斷類別，設為 '其他'。如果無法判斷消費時間，設為 null。請返回每筆資料的 JSON array格式";
             var chatMessages = new List<ChatMessage>()
                {
                    new SystemChatMessage(prompt),
