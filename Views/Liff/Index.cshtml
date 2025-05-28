@@ -3,12 +3,14 @@
 }
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <main id="app" class="container py-3">
     <div class="text-center mb-3">
-        <button class="btn btn-sm me-2" @@click="prevMonth">◀</button>
-        <span class=" fs-5">{{ year }}年{{ month + 1 }}月</span>
-        <button class="btn btn-sm ms-2" @@click="nextMonth">▶</button>
+        <button class="btn btn-sm me-2" @@click ="prevMonth">◀</button>
+        <span class="fs-5">{{ year }}年{{ month + 1 }}月</span>
+        <button class="btn btn-sm ms-2" @@click ="nextMonth">▶</button>
     </div>
 
     <div class="calendar-grid mx-auto text-center">
@@ -23,7 +25,7 @@
                  :key="i"
                  class="calendar-cell"
                  :class="getDateClass(day)"
-                 @@click="selectDate(day.date)">
+            @@click ="selectDate(day.date)">
                 <div>{{ day.isToday ? '今天' : day.day }}</div>
                 <span v-if="hasData(day.date)" class="record-dot">•</span>
             </div>
@@ -37,7 +39,7 @@
         </div>
         <div class="card text-dark mb-3" v-for="r in filteredRecords" :key="r.id">
             <div class="card-body">
-                <h5 class="card-title">{{ r.title }}</h5>
+                <h5 class="card-title">{{ r.description }}</h5>
                 <p class="card-text">{{ r.amount }} 元</p>
             </div>
         </div>
@@ -72,24 +74,24 @@
         color: #000;
     }
 
-        .calendar-cell.inactive {
-            color: #bbb;
-        }
+    .calendar-cell.inactive {
+        color: #bbb;
+    }
 
-        .calendar-cell.sunday {
-            color: #d32f2f; /* 深紅 */
-        }
+    .calendar-cell.sunday {
+        color: #d32f2f;
+    }
 
-        .calendar-cell.saturday {
-            color: #f57c00; /* 深橘 */
-        }
+    .calendar-cell.saturday {
+        color: #f57c00;
+    }
 
-        .calendar-cell.selected {
-            background-color: #1976d2;
-            color: #fff;
-            border-radius: 100px;
-            font-weight: bold;
-        }
+    .calendar-cell.selected {
+        background-color: #1976d2;
+        color: #fff;
+        border-radius: 100px;
+        font-weight: bold;
+    }
 
     .record-dot {
         position: absolute;
@@ -113,11 +115,38 @@
         .btn:active {
             transform: scale(0.95);
         }
-
 </style>
 
 <script>
-    const { createApp, ref, computed } = Vue;
+    async function initLiffAndFetchRecords(appCtx) {
+        try {
+            await liff.init({ liffId: '@Model.LiffId' });
+
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+
+            const profile = await liff.getProfile();
+            console.log("登入成功：", profile);
+            appCtx.profile.value = profile;
+
+            const res = await fetch(`/api/ExpenseRecord/${profile.userId}`);
+            if (!res.ok) throw new Error("載入資料失敗");
+
+            const data = await res.json();
+            console.log('data', data)
+            appCtx.records.value = data.map(r => ({
+                ...r,
+                consumptionTime: new Date(r.consumptionTime).toISOString().split('T')[0]
+            }));
+        } catch (err) {
+            console.error("LIFF 初始化失敗", err);
+            alert("LIFF 初始化錯誤，請重新整理");
+        }
+    }
+
+    const { createApp, ref, computed, onMounted } = Vue;
 
     createApp({
         setup() {
@@ -127,21 +156,13 @@
             const year = ref(today.getFullYear());
             const month = ref(today.getMonth());
             const selectedDate = ref(todayString);
+            const profile = ref(null);
+            const records = ref([]);
+            const filteredRecords = computed(() =>
+                records.value.filter(r => r.consumptionTime === selectedDate.value)
+            );
 
-            const records = ref([
-                { id: 1, title: '早餐', amount: 200, consumptionTime: '2025-05-12' },
-                { id: 2, title: '午餐', amount: 300, consumptionTime: '2025-05-12' },
-                { id: 3, title: '晚餐', amount: 150, consumptionTime: '2025-05-13' },
-                { id: 4, title: '便當', amount: 120, consumptionTime: '2025-05-20' }
-            ]);
-
-            const filteredRecords = computed(() => {
-                return records.value.filter(r => r.consumptionTime === selectedDate.value);
-            });
-
-            const hasData = (date) => {
-                return records.value.some(r => r.consumptionTime === date);
-            };
+            const hasData = (date) => records.value.some(r => r.consumptionTime === date);
 
             const calendarDays = computed(() => {
                 const result = [];
@@ -149,7 +170,6 @@
                 const startDayOfWeek = firstDay.getDay();
                 const totalDays = new Date(year.value, month.value + 1, 0).getDate();
 
-                // 上月補
                 const prevLastDate = new Date(year.value, month.value, 0).getDate();
                 for (let i = startDayOfWeek - 1; i >= 0; i--) {
                     const d = new Date(year.value, month.value - 1, prevLastDate - i);
@@ -162,7 +182,6 @@
                     });
                 }
 
-                // 當月
                 for (let i = 1; i <= totalDays; i++) {
                     const d = new Date(year.value, month.value, i);
                     result.push({
@@ -174,7 +193,6 @@
                     });
                 }
 
-                // 下月補足 42 格
                 while (result.length < 42) {
                     const d = new Date(year.value, month.value + 1, result.length - (startDayOfWeek + totalDays) + 1);
                     result.push({
@@ -224,10 +242,15 @@
                 }
             };
 
+            onMounted(async () => {
+                await initLiffAndFetchRecords({ profile, records });
+            });
+
             return {
                 year,
                 month,
                 selectedDate,
+                profile,
                 records,
                 filteredRecords,
                 calendarDays,
