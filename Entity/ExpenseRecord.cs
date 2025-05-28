@@ -30,7 +30,6 @@ public class ExpenseRecord
     [Required]
     public DateTime CreateDateTime { get; set; }
     [JsonIgnore]
-    [Required]
     public int UserId { get; set; }
     [JsonIgnore]
     public virtual User User { get; set; }
