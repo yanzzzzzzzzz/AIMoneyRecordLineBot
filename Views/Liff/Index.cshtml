@@ -49,6 +49,9 @@
             </div>
             <div class="card text-dark mb-3" v-for="r in filteredRecords" :key="r.id">
                 <div class="card-body">
+                    <span class="position-absolute top-0 end-0 m-2 badge bg-primary text-white">
+                        {{ r.category }}
+                    </span>
                     <h5 class="card-title">{{ r.description }}</h5>
                     <p class="card-text">{{ r.amount }} 元</p>
                 </div>
