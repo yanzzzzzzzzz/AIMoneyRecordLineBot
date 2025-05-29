@@ -7,40 +7,51 @@
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <main id="app" class="container py-3">
-    <div class="text-center mb-3">
-        <button class="btn btn-sm me-2" @@click ="prevMonth">◀</button>
-        <span class="fs-5">{{ year }}年{{ month + 1 }}月</span>
-        <button class="btn btn-sm ms-2" @@click ="nextMonth">▶</button>
-    </div>
 
-    <div class="calendar-grid mx-auto text-center">
-        <div class="d-flex fw-bold">
-            <div class="calendar-weekday" v-for="(d, i) in ['日','一','二','三','四','五','六']"
-                 :class="getWeekdayClass(i)">
-                {{ d }}
-            </div>
-        </div>
-        <div class="d-flex flex-wrap">
-            <div v-for="(day, i) in calendarDays"
-                 :key="i"
-                 class="calendar-cell"
-                 :class="getDateClass(day)"
-            @@click ="selectDate(day.date)">
-                <div>{{ day.isToday ? '今天' : day.day }}</div>
-                <span v-if="hasData(day.date)" class="record-dot">•</span>
-            </div>
+    <!-- Loading Spinner -->
+    <div v-if="loading" class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
-    <div class="mt-4">
-        <h5 class="mb-3">記帳紀錄 - {{ selectedDate }}</h5>
-        <div v-if="filteredRecords.length === 0">
-            <p class="text-secondary">沒有記錄。</p>
+    <!-- Main Content -->
+    <div v-else>
+        <div class="text-center mb-3">
+            <button class="btn btn-sm me-2" @@click="prevMonth">◀</button>
+            <span class="fs-5">{{ year }}年{{ month + 1 }}月</span>
+            <button class="btn btn-sm ms-2" @@click="nextMonth">▶</button>
         </div>
-        <div class="card text-dark mb-3" v-for="r in filteredRecords" :key="r.id">
-            <div class="card-body">
-                <h5 class="card-title">{{ r.description }}</h5>
-                <p class="card-text">{{ r.amount }} 元</p>
+
+        <div class="calendar-grid mx-auto text-center">
+            <div class="d-flex fw-bold">
+                <div class="calendar-weekday" v-for="(d, i) in ['日','一','二','三','四','五','六']"
+                     :class="getWeekdayClass(i)">
+                    {{ d }}
+                </div>
+            </div>
+            <div class="d-flex flex-wrap">
+                <div v-for="(day, i) in calendarDays"
+                     :key="i"
+                     class="calendar-cell"
+                     :class="getDateClass(day)"
+                     @@click="selectDate(day.date)">
+                    <div>{{ day.isToday ? '今天' : day.day }}</div>
+                    <span v-if="hasData(day.date)" class="record-dot">•</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h5 class="mb-3">記帳紀錄 - {{ selectedDate }}</h5>
+            <div v-if="filteredRecords.length === 0">
+                <p class="text-secondary">沒有記錄。</p>
+            </div>
+            <div class="card text-dark mb-3" v-for="r in filteredRecords" :key="r.id">
+                <div class="card-body">
+                    <h5 class="card-title">{{ r.description }}</h5>
+                    <p class="card-text">{{ r.amount }} 元</p>
+                </div>
             </div>
         </div>
     </div>
@@ -158,6 +169,8 @@
             const selectedDate = ref(todayString);
             const profile = ref(null);
             const records = ref([]);
+            const loading = ref(true);
+
             const filteredRecords = computed(() =>
                 records.value.filter(r => r.consumptionTime === selectedDate.value)
             );
@@ -243,7 +256,9 @@
             };
 
             onMounted(async () => {
+                loading.value = true;
                 await initLiffAndFetchRecords({ profile, records });
+                loading.value = false;
             });
 
             return {
@@ -259,7 +274,8 @@
                 getWeekdayClass,
                 selectDate,
                 prevMonth,
-                nextMonth
+                nextMonth,
+                loading
             };
         }
     }).mount('#app');
