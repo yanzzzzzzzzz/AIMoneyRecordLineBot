@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AIMoneyRecordLineBot.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace AIMoneyRecordLineBot.Controllers
 {
@@ -8,9 +10,9 @@ namespace AIMoneyRecordLineBot.Controllers
     {
         private readonly string liffId;
 
-        public LiffController()
+        public LiffController(IOptions<LineBotSettings> settings)
         {
-            this.liffId = "";
+            liffId = settings.Value.LiffId;
         }
 
         public IActionResult Index()

@@ -19,6 +19,7 @@ var configuration = builder.Configuration;
 var channelAccessToken = configuration["LineBotChannelAccessToken"] ?? "";
 var OpenaiApiKey = configuration["OpenaiApiKey"] ?? "";
 var GeminiApiKey = configuration["GeminiApiKey"] ?? "";
+var LiffId = configuration["LiffId"] ?? "";
 builder.Services.AddDbContext<AIMoneyRecordLineBotContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
@@ -27,6 +28,7 @@ builder.Services.Configure<LineBotSettings>(settings =>
     settings.ChannelAccessToken = channelAccessToken;
     settings.OpenaiApiKey = OpenaiApiKey;
     settings.GeminiApiKey = GeminiApiKey;
+    settings.LiffId = LiffId;
 });
 var app = builder.Build();
 
